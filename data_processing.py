@@ -46,7 +46,7 @@ def load_tabular_data(name="1000genome_new_2022",
                   "montage": "montage",
                   "predict_future_sales": "predict-future-sales"}
     # ! the raw data is located in ../graph_nn_2/data_new
-    files = glob.glob(f"../graph_nn_2/data_new/*/{data_files[name]}*.csv")
+    files = glob.glob(f"../PoSeiDon/data_new/*/{data_files[name]}*.csv")
     df_list = []
     for file in files:
         df = pd.read_csv(file, index_col=[0])
@@ -64,7 +64,7 @@ def load_tabular_data(name="1000genome_new_2022",
         # subtract the timestamp by the first timestamp (ready)
         df[TS_FEATURES] = df[TS_FEATURES].sub(df[TS_FEATURES].ready.min())
 
-        df.fillna(0)
+        df = df.fillna(0)
         df_list.append(df)
 
     # concatenate list of dataframes
@@ -74,14 +74,14 @@ def load_tabular_data(name="1000genome_new_2022",
     if columns is None:
         selected_features = DELAY_FEATURES + BYTES_FEATURES + KICKSTART_FEATURES
     else:
-        if columns.isinstance(str):
+        if isinstance(columns, str):
             selected_features = [columns]
         else:
             selected_features = columns
 
     # add `label`
     if binary:
-        merged_df['label'] = merged_df["anomaly_type"].map(lambda x: 0 if x == "None" else 1)
+        merged_df['label'] = merged_df["anomaly_type"].map(lambda x: 0 if x == 0 else 1)
         merged_df = merged_df[selected_features + ['label']]
     else:
         # ! TODO: add multi-labels
@@ -167,7 +167,8 @@ if __name__ == "__main__":
     for name in wns:
         logging.info(f"processing {name}")
 
-        df = load_tabular_data(name=name)
+        df = load_tabular_data(name=name, columns=DELAY_FEATURES)
+        print(df.describe())
         fn = build_text_data(df=df, folder=data_folder, name=name)
         df = pd.read_csv(fn)
 
@@ -185,7 +186,7 @@ if __name__ == "__main__":
         test_df = pd.DataFrame(test_df)
 
         # save to local files
-        logging.info(f"save to {data_folder}/{name}")
-        train_df.to_csv(f"{data_folder}/{name}/train.csv", index=False)
-        validation_df.to_csv(f"{data_folder}/{name}/validation.csv", index=False)
-        test_df.to_csv(f"{data_folder}/{name}/test.csv", index=False)
+        # logging.info(f"save to {data_folder}/{name}")
+        # train_df.to_csv(f"{data_folder}/{name}/train.csv", index=False)
+        # validation_df.to_csv(f"{data_folder}/{name}/validation.csv", index=False)
+        # test_df.to_csv(f"{data_folder}/{name}/test.csv", index=False)
