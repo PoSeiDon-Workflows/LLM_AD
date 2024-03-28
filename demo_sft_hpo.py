@@ -1,12 +1,10 @@
-""" Hyperparameter search (HPS) for SFT with Optuna
+""" Hyperparameter search (HPS) for SFT with Optuna (with `trainer.hyperparameter_search`)
 
 * Task: text-classification (binary labels)
 * Method: Supervised Fine-tuning
 * Dataset: 1000genome
+* Pre-trained model: bert-base-uncased
 
-NOTE:
-  * hyperparameter search for "trainer" in HF,
-  * define search
 """
 
 import evaluate
@@ -17,16 +15,8 @@ from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           TrainingArguments)
 
 
-def ray_hp_space(trial):
-    # NOTE: this should be compatible with DeepHyper
-    from ray import tune
-    return {
-        "learning_rate": tune.loguniform(1e-6, 1e-4),
-        "per_device_train_batch_size": tune.choice([8, 16, 32, 64, 128]),
-    }
-
-
 def optuna_hp_space(trial):
+    # NOTE: define the hyperparameter search space
     return {
         "learning_rate": trial.suggest_float("learning_rate", 1e-6, 1e-4, log=True),
         "weight_decay": trial.suggest_float("weight_decay", 0.0, 1e-4),
@@ -55,11 +45,6 @@ tokenizer_datasets = tokenizer_datasets.remove_columns(["text"])
 tokenized_datasets = tokenizer_datasets.rename_column("label", "labels")
 tokenized_datasets.set_format(type="torch")
 
-# TODO: Define the variable "model_args" and "config" here
-model_args = {"model_name": "sft_hps",
-              "cache_dir": "./cache",
-              "model_revision": "main",
-              "use_auth_token": "None"}
 # NOTE: add hps in Bert:
 # https://huggingface.co/docs/transformers/model_doc/bert#transformers.BertConfig
 config = BertConfig()
@@ -74,11 +59,7 @@ def compute_metrics(eval_pred):
     return acc.compute(predictions=predictions, references=labels)
 
 
-def model_init(trial):
-    return AutoModelForSequenceClassification.from_pretrained(
-        ckp,
-        config=config,
-    )
+model_init = AutoModelForSequenceClassification.from_pretrained(ckp, config=config)
 
 
 # set hps to training arguments
@@ -88,7 +69,6 @@ training_args = TrainingArguments(
     save_strategy="no",
     seed=42,
     auto_find_batch_size=True,
-    num_train_epochs=3,
 )
 
 trainer = Trainer(
