@@ -13,6 +13,7 @@ Ref:
 import evaluate
 import numpy as np
 from datasets import load_dataset
+from datasets import load_from_disk
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           BertConfig, DataCollatorWithPadding, Trainer,
                           TrainingArguments)
@@ -22,15 +23,18 @@ from deephyper.evaluator import Evaluator
 
 
 name = "1000genome"
-ckp = "bert-base-uncased"
+#ckp = "bert-base-uncased"
+ckp = "/global/cfs/cdirs/m4144/HF_LLM/bert-base-uncased"
 
 # load dataset
-raw_dataset = load_dataset("csv",
-                           data_files={"train": f"./data/{name}/train.csv",
-                                       "validation": f"./data/{name}/validation.csv",
-                                       "test": f"./data/{name}/test.csv"})
+#raw_dataset = load_dataset("csv",
+#                           data_files={"train": f"./data/{name}/train.csv",
+#                                       "validation": f"./data/{name}/validation.csv",
+#                                       "test": f"./data/{name}/test.csv"})
 
-tokenizer = AutoTokenizer.from_pretrained(ckp)
+raw_dataset = load_from_disk("/global/cfs/cdirs/m4144/datasets/1000genome")
+
+tokenizer = AutoTokenizer.from_pretrained(ckp, local_files_only=True)
 tokenizer_datasets = raw_dataset.map(lambda data: tokenizer(data["text"], truncation=True), batched=True)
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 tokenizer_datasets = tokenizer_datasets.remove_columns(["text"])
@@ -75,7 +79,7 @@ def run(config):
     # https://huggingface.co/docs/transformers/model_doc/bert#transformers.BertConfig
     bert_config = BertConfig(**model_config)
 
-    model = AutoModelForSequenceClassification.from_pretrained(ckp, config=bert_config)
+    model = AutoModelForSequenceClassification.from_pretrained(ckp, config=bert_config, local_files_only=True)
 
     # NOTE: add hps to training arguments
     training_args = TrainingArguments(
@@ -120,12 +124,22 @@ problem.add_hyperparameter([16, 32, 64, 128], "per_device_train_batch_size", def
 
 # define the evaluator to distribute the computation
 # TODO: check the method compatible with NERSC for multi-gpu usage
+#evaluator = Evaluator.create(run,
+#                             method="ray",
+#                             method_kwargs={
+#                                 "num_gpus": 4,
+#                                 "num_cpus": 4,
+#                                 "num_cpus_per_task": 1,
+#                                 "num_gpus_per_task": 1
+#                             })
+
 evaluator = Evaluator.create(run,
                              method="serial",
                              method_kwargs={
-                                 "num_workers": 2,
+                                 "num_workers": 4,
                              })
 
 search = CBO(problem, evaluator)
 
 results = search.search(max_evals=1)
+#results = search.search(max_evals=20)

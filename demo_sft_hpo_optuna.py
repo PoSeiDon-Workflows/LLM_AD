@@ -10,6 +10,7 @@
 import evaluate
 import numpy as np
 from datasets import load_dataset
+from datasets import load_from_disk
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           BertConfig, DataCollatorWithPadding, Trainer,
                           TrainingArguments)
@@ -30,15 +31,18 @@ def optuna_hp_space(trial):
 
 
 name = "1000genome"
-ckp = "bert-base-uncased"
+#ckp = "bert-base-uncased"
+ckp = "/global/cfs/cdirs/m4144/HF_LLM/bert-base-uncased"
 
 # load dataset
-raw_dataset = load_dataset("csv",
-                           data_files={"train": f"./data/{name}/train.csv",
-                                       "validation": f"./data/{name}/validation.csv",
-                                       "test": f"./data/{name}/test.csv"})
+#raw_dataset = load_dataset("csv",
+#                           data_files={"train": f"./data/{name}/train.csv",
+#                                       "validation": f"./data/{name}/validation.csv",
+#                                       "test": f"./data/{name}/test.csv"})
 
-tokenizer = AutoTokenizer.from_pretrained(ckp)
+raw_dataset = load_from_disk("/global/cfs/cdirs/m4144/datasets/1000genome")
+
+tokenizer = AutoTokenizer.from_pretrained(ckp, local_files_only=True)
 tokenizer_datasets = raw_dataset.map(lambda data: tokenizer(data["text"], truncation=True), batched=True)
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 tokenizer_datasets = tokenizer_datasets.remove_columns(["text"])
@@ -58,8 +62,8 @@ def compute_metrics(eval_pred):
     predictions = np.argmax(predictions, axis=1)
     return acc.compute(predictions=predictions, references=labels)
 
-
-model_init = AutoModelForSequenceClassification.from_pretrained(ckp, config=config)
+def get_model():
+    return AutoModelForSequenceClassification.from_pretrained(ckp, config=config, local_files_only=True)
 
 
 # set hps to training arguments
@@ -78,7 +82,7 @@ trainer = Trainer(
     eval_dataset=eval_dataset,
     # compute_metrics=compute_metrics, # NOTE: remove metrics and it will return eval loss by default
     tokenizer=tokenizer,
-    model_init=model_init,
+    model_init=get_model,
     data_collator=data_collator,
 )
 
