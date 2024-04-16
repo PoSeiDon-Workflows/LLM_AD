@@ -28,7 +28,6 @@ def process_args():
                  "nowcast-clustering-16",
                  "wind-clustering-casa",
                  "wind-noclustering-casa",
-                 "1000genome_new_2022",
                  "montage",
                  "predict_future_sales",
                  "all"

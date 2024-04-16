@@ -1,26 +1,32 @@
-"""
-Online detection:
-
-"""
+# %% [markdown]
+# # Online detection with LLMs
+#
+# * Follow the [README.md](../README.md) to set up the environment and data sources.
+# * Dataset: `1000 Genome` (binary labels)
+# * Pretrained model: `bert-base-uncased`
 # %%
 import logging
 import pickle
+import sys
 from collections import defaultdict
 from datetime import datetime
 
 import evaluate
-from matplotlib import tight_layout
 import numpy as np
 import pandas as pd
 import torch
 from datasets import load_dataset
+from matplotlib import tight_layout
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
-                          DataCollatorWithPadding, Trainer, TrainingArguments, pipeline)
+                          DataCollatorWithPadding, Trainer, TrainingArguments,
+                          pipeline)
+
+sys.path.append('../')
 
 from data_processing import build_text_data, load_tabular_data
 from utils import create_dir
-from tqdm import tqdm
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # DEVICE = "cpu"
@@ -28,11 +34,11 @@ logging.getLogger("transformers").setLevel(logging.CRITICAL)
 
 
 # %%
-name = "1000genome_new_2022"
+name = "1000genome"
 raw_dataset = load_dataset("csv",
-                           data_files={"train": f"./data/{name}/train.csv",
-                                       "validation": f"./data/{name}/validation.csv",
-                                       "test": f"./data/{name}/test.csv"})
+                           data_files={"train": f"../data/{name}/train.csv",
+                                       "validation": f"../data/{name}/validation.csv",
+                                       "test": f"../data/{name}/test.csv"})
 
 ckps = [
     "albert-base-v2",
@@ -51,9 +57,10 @@ ckps = [
 
 metrics = evaluate.combine(["accuracy", "f1", "precision", "recall"])
 
-
+ckp = "bert-base-uncased"
+ckp_path = f"../models/1000genome/{ckp}"
 # %%
-zsc = pipeline("zero-shot-classification", model='./models/1000genome_new_2022/bert-base-uncased-sft', device=0)
+zsc = pipeline("zero-shot-classification", model=ckp_path, device=0)
 text = raw_dataset['test'][0]
 count = 0
 first_count = []
@@ -76,7 +83,7 @@ if scores[label] > scores[1 - label]:
 
 # %%
 
-zsc = pipeline("zero-shot-classification", model='./models/1000genome_new_2022/bert-base-uncased-sft', device=0)
+zsc = pipeline("zero-shot-classification", model=ckp_path, device=0)
 test_dataset = raw_dataset['test']
 count = 0
 first_count = []
@@ -97,8 +104,6 @@ for i in tqdm(range(len(test_dataset))):
                 break
 
 # %%
-ckp_path = "./models/1000genome_new_2022/bert-base-uncased-sft"
-# ckp_path = "bert-base-uncased"
 clf = pipeline("text-classification",
                model=ckp_path,
                tokenizer=ckp_path,
@@ -127,9 +132,12 @@ for i in tqdm(range(len(test_dataset))):
                 first_count.append(j)
                 break
 
+
 # %%
-import matplotlib.pyplot as plt
 from collections import Counter
+
+import matplotlib.pyplot as plt
+
 count_dict = Counter(first_count)
 STATES = [
     'wms_delay',
@@ -157,7 +165,6 @@ plt.savefig("online_detection.pdf")
 
 
 # %%
-ckp_path = "./models/1000genome_new_2022/bert-base-uncased-sft"
 # ckp_path = "bert-base-uncased"
 clf = pipeline("text-classification",
                model=ckp_path,

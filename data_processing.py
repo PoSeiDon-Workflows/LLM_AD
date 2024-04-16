@@ -28,25 +28,26 @@ BYTES_FEATURES = ["stage_in_bytes",
 KICKSTART_FEATURES = ["kickstart_executables_cpu_time"]
 
 
-def load_tabular_data(name="1000genome_new_2022",
+def load_tabular_data(name="1000genome",
                       columns=None,
                       binary=True):
-    """ Load the tabular data from `data_new` folder.
+    """ Load the tabular data from `raw_data` folder.
 
     Args:
         name (str, optional): Name of the workflow.
-            Defaults to "1000genome_new_2022".
+            Defaults to "1000genome".
         columns (list, optional): Columns of features to be select.
             Defaults to None, to select all the features.
 
     Returns:
         pd.DataFrame: A dataframe of combined data
     """
-    data_files = {"1000genome_new_2022": "1000-genome",
+    data_files = {"1000genome": "1000-genome",
                   "montage": "montage",
                   "predict_future_sales": "predict-future-sales"}
-    # ! the raw data is located in ../graph_nn_2/data_new
-    files = glob.glob(f"../PoSeiDon/data_new/*/{data_files[name]}*.csv")
+    # ! the raw data is located in ../graph_nn_2/raw_data
+    # TODO: replace the relative path with flowbench api
+    files = glob.glob(f"./raw_data/*/{data_files[name]}*.csv")
     df_list = []
     for file in files:
         df = pd.read_csv(file, index_col=[0])
@@ -97,7 +98,7 @@ def load_tabular_data(name="1000genome_new_2022",
 
 def build_text_data(df,
                     folder="./",
-                    name="1000genome_new_2022",
+                    name="1000genome",
                     **kwargs):
     """ Convert the tabular data into text data with columns of ['text', 'label']
         "<COLUMN> is <VALUE> <COLUMN> is <VALUE> ... ,<LABEL>"
@@ -105,7 +106,7 @@ def build_text_data(df,
     Args:
         df (pd.DataFrame): Dataframe of concated data.
         folder (str, optional): Folder name to be processed. Defaults to "./".
-        name (str, optional): Name of the workflow. Defaults to "1000genome_new_2022".
+        name (str, optional): Name of the workflow. Defaults to "1000genome".
 
     Returns:
         str: File name of the output csv file.
@@ -128,13 +129,13 @@ def build_text_data(df,
     return outfile
 
 
-def split_dataset(name="1000genome_new_2022",
+def split_dataset(name="1000genome",
                   pretrained_model="distilbert-base-uncased"):
     """Split dataset into train/val/test with ratio of 0.8/0.1/0.1.
 
     Args:
         name (str, optional): Name of the workflow.
-            Defaults to "1000genome_new_2022".
+            Defaults to "1000genome".
         pretrained_model (str, optional): Name of pretrained model.
             Defaults to "distilbert-base-uncased".
 
@@ -162,7 +163,7 @@ def split_dataset(name="1000genome_new_2022",
 
 
 if __name__ == "__main__":
-    wns = ["1000genome_new_2022", "montage", "predict_future_sales"]
+    wns = ["1000genome", "montage", "predict_future_sales"]
     data_folder = "./data_v2"
     for name in wns:
         logging.info(f"processing {name}")

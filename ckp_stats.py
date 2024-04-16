@@ -58,7 +58,7 @@ for ckp in ckps:
 """ Print the statistic of the dataset """
 """
 names = [
-    "1000genome_new_2022",
+    "1000genome",
     "montage",
     "predict_future_sales"
 ]
@@ -161,7 +161,7 @@ plt.legend(ncol=3, loc="upper center", bbox_to_anchor=(0.5, 1.2), fontsize=8)
 pbar = tqdm(ckps, desc="ckp")
 all_res_sft = defaultdict(list)
 for ckp in pbar:
-    clf = pipeline(task="text-classification", model=f"./models/1000genome_new_2022/{ckp}-sft")
+    clf = pipeline(task="text-classification", model=f"./models/1000genome/{ckp}-sft")
     # check prediction with empty string
     res = clf([""])
     # print(ckp, clf(""))
@@ -202,14 +202,14 @@ plt.legend(ncol=3, loc="upper center", bbox_to_anchor=(0.5, 1.2), fontsize=8)
 # %%
 # %%
 from sklearn.manifold import TSNE
-name = "1000genome_new_2022"
+name = "1000genome"
 raw_dataset = load_dataset("csv",
                            data_files={"train": f"./data/{name}/train.csv",
                                        "validation": f"./data/{name}/validation.csv",
                                        "test": f"./data/{name}/test.csv"})
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 model1 = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased")
-model2 = AutoModelForSequenceClassification.from_pretrained("./models/1000genome_new_2022/bert-base-uncased-sft")
+model2 = AutoModelForSequenceClassification.from_pretrained("./models/1000genome/bert-base-uncased-sft")
 emb1 = model1.get_input_embeddings()
 emb2 = model2.get_input_embeddings()
 

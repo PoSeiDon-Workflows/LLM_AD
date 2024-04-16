@@ -1,3 +1,9 @@
+# %% [markdown]
+# # Dealing with Catastrophic Forgetting with Freezing
+# * dataset: 1000genome, Montage
+# * model: bert-base-uncased
+# * model without freezing vs. model with freezing in SFT
+
 # %%
 import logging
 import pickle
@@ -13,7 +19,8 @@ from torch.utils.data import DataLoader
 from transformers import (AutoModelForSequenceClassification, AutoTokenizer,
                           DataCollatorWithPadding, Trainer, TrainingArguments,
                           pipeline)
-
+import sys
+sys.path.append('../')
 from data_processing import build_text_data, load_tabular_data
 from utils import create_dir
 
@@ -23,17 +30,17 @@ logging.getLogger("transformers").setLevel(logging.CRITICAL)
 
 # %%
 ''' load data '''
-name = "1000genome_new_2022"
+name = "1000genome"
 raw_dataset = load_dataset("csv",
-                           data_files={"train": f"./data/{name}/train.csv",
-                                       "validation": f"./data/{name}/validation.csv",
-                                       "test": f"./data/{name}/test.csv"})
+                           data_files={"train": f"../data/{name}/train.csv",
+                                       "validation": f"../data/{name}/validation.csv",
+                                       "test": f"../data/{name}/test.csv"})
 
 name2 = "montage"
 raw_dataset2 = load_dataset("csv",
-                            data_files={"train": f"./data/{name2}/train.csv",
-                                        "validation": f"./data/{name2}/validation.csv",
-                                        "test": f"./data/{name2}/test.csv"})
+                            data_files={"train": f"../data/{name2}/train.csv",
+                                        "validation": f"../data/{name2}/validation.csv",
+                                        "test": f"../data/{name2}/test.csv"})
 
 ckp = "bert-base-uncased"
 metrics = evaluate.combine(["accuracy", "f1", "precision", "recall"])
@@ -79,7 +86,7 @@ metric_res = metrics.compute(predictions=pred_labels, references=predictions.lab
 print("test metrics on pretrained model", metric_res)
 
 # %%
-model_folder = "./models/tmp_1000genome"
+model_folder = "../models/tmp_1000genome"
 ''' sft model on 1000genome workflows  '''
 training_args = TrainingArguments(output_dir=model_folder,
                                   overwrite_output_dir=True,
@@ -109,10 +116,10 @@ print("test metrics on sft model", metric_res)
 
 # %%
 ''' sft model again on montage workflows '''
-old_model_folder = "./models/tmp_1000genome"
+old_model_folder = "../models/tmp_1000genome"
 model = AutoModelForSequenceClassification.from_pretrained(old_model_folder, num_labels=2).to(DEVICE)
 
-model_folder = "./models/tmp_1000genome_montage"
+model_folder = "../models/tmp_1000genome_montage"
 training_args = TrainingArguments(output_dir=model_folder,
                                   overwrite_output_dir=True,
                                   save_strategy="no",
@@ -142,7 +149,7 @@ print("test metrics on sft model (1000gnome, montage)", metric_res)
 
 # %%
 ''' sft last layer '''
-old_model_folder = "./models/tmp_1000genome"
+old_model_folder = "../models/tmp_1000genome"
 model = AutoModelForSequenceClassification.from_pretrained(old_model_folder, num_labels=2).to(DEVICE)
 
 # Freeze the model parameters
@@ -153,7 +160,7 @@ for param in model.parameters():
 for param in model.classifier.parameters():
     param.requires_grad = True
 
-model_folder = "./models/tmp_1000genome_montage_freeze_v1"
+model_folder = "../models/tmp_1000genome_montage_freeze_v1"
 training_args = TrainingArguments(output_dir=model_folder,
                                   overwrite_output_dir=True,
                                   save_strategy="no",
