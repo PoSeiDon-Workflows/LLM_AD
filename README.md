@@ -1,8 +1,9 @@
 # Large Language Models for Anomaly Detection in Computational Workflows: from Supervised Fine-Tuning to In-Context Learning
 
-<p align="center">
+<!-- <p align="center">
   <img src="./SFT_ICL.png" width="80%">
-</p>
+</p> -->
+![image](./SFT_ICL.png)
 
 ## Setup environment
 
